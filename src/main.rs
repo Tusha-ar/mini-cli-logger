@@ -1,5 +1,12 @@
 use std::{fmt::Display, rc::Rc};
 
+
+trait LoggerTrait {
+    fn add_log(&mut self, log_entry: &LogEntry);
+    fn display(&self);
+    fn filter_by_level(&self, level: LogLevel) -> Vec<&LogEntry>;
+}
+
 #[derive(PartialEq)]
 enum LogLevel {
     Info,
@@ -32,7 +39,9 @@ impl Logger {
     fn new() -> Self {
         Logger { entries: vec![] }
     }
+}
 
+impl LoggerTrait for Logger {
     fn add_log(&mut self, log_entry: &LogEntry) {
          self.entries.push(LogEntry {
             level: log_entry.level.clone(),
@@ -49,7 +58,7 @@ impl Logger {
         }
     }
 
-    fn filter_by_level(&self, level: LogLevel) -> Vec<&LogEntry>{
+    fn filter_by_level(&self, level: LogLevel) -> Vec<&LogEntry> {
         let entries_by_level: Vec<_> = self.entries.iter().filter(|v| {
             *v.level == level
         }).collect();
