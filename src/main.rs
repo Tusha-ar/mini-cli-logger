@@ -4,7 +4,8 @@ use std::{fmt::Display, rc::Rc};
 trait LoggerTrait {
     fn add_log(&mut self, log_entry: &LogEntry);
     fn display(&self);
-    fn filter_by_level(&self, level: LogLevel) -> Vec<&LogEntry>;
+    fn filter_by_level(&self, level: LogLevel);
+    fn filter_by_service(&self, service: &str);
 }
 
 #[derive(PartialEq)]
@@ -24,6 +25,7 @@ impl Display for LogLevel {
     }
 }
 
+#[derive(Clone)]
 struct LogEntry {
     level: Rc<LogLevel>,
     message: String,
@@ -58,12 +60,25 @@ impl LoggerTrait for Logger {
         }
     }
 
-    fn filter_by_level(&self, level: LogLevel) -> Vec<&LogEntry> {
-        let entries_by_level: Vec<_> = self.entries.iter().filter(|v| {
-            *v.level == level
-        }).collect();
-
-        entries_by_level
+    fn filter_by_level(&self, level: LogLevel) {
+        let entries_by_level: Logger = Logger { 
+                entries: self.entries.iter().filter(|v| {
+                *v.level == level
+            })
+            .cloned()
+            .collect::<Vec<_>>(),
+        };
+        entries_by_level.display();
+    }
+    fn filter_by_service(&self, service: &str) {
+        let entries_by_service:Logger = Logger {
+                entries:  self.entries.iter().filter(|v| {
+                v.service == *service
+            })
+            .cloned()
+            .collect::<Vec<_>>(),
+        };
+        entries_by_service.display();
     }
 }
 
@@ -108,7 +123,41 @@ fn main() {
         logs.add_log(&new_entry);
         
     }
+    println!("Do you want to:");
+    println!("1. Display all logs");
+    println!("2. Filter by service");
+    println!("3. Filter by log level");
 
-    logs.display();
+    let mut input = String::new();
+
+    io::stdin().read_line(&mut input).expect("Unbale to read the input");
+    let input = input.trim();
+    match input {
+        "1" => {
+            logs.display();
+        },
+        "2" => {
+            println!("By which service you want to filter?");
+            let mut input = String::new();
+            io::stdin().read_line(&mut input).expect("Failed to read line");
+            logs.filter_by_service(input.trim());
+        }
+        "3" => {
+            println!("By which level you want to filter?");
+            let mut input = String::new();
+            io::stdin().read_line(&mut input).expect("Failed to read input");
+                match input.trim().to_lowercase().as_str() {
+                    "info" => logs.filter_by_level(LogLevel::Info),
+                    "warning" => logs.filter_by_level(LogLevel::Warning),
+                    "error" => logs.filter_by_level(LogLevel::Error),
+                    _ => println!("You entered an invalid level")
+                }
+        }
+        _ => {
+            println!("You entered an invalid input");
+            println!("Try again");
+        }
+    }
+
 }
 
